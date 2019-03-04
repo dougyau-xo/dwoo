@@ -384,7 +384,15 @@ class Str implements ITemplate
             $this->makeDirectory(dirname($compiledFile), $core->getCompileDir());
             file_put_contents($compiledFile, $compiler->compile($core, $this));
             if ($this->chmod !== null) {
-                chmod($compiledFile, $this->chmod);
+                // Check, if file owner and PHP process owner are the same,
+                // otherwise there will be Permission Denied error.
+                if (function_exists('posix_geteuid')) {
+                    if (posix_geteuid() === fileowner($compiledFile)) {
+                        chmod($compiledFile, $this->chmod);
+                    }
+                } else {
+                    chmod($compiledFile, $this->chmod);
+                }
             }
 
             if (extension_loaded('Zend OPcache')) {
